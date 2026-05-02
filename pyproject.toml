@@ -1,0 +1,20 @@
+[project]
+name = "dreamv2"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "torch",
+    "scipy",
+    "numpy",
+    "datasets",
+    "transformers",
+    "tokenizers",
+    "tqdm",
+    "tensorboard>=2.20.0",
+    "kiwipiepy>=0.23.1",
+]
+
+
+
