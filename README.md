@@ -101,6 +101,23 @@ DreamV2는 다음과 같은 연구들로부터 영감을 받았으며, 이를 �
 
 ---
 
+## 📊 Parameter Statistics
+
+DreamV2는 임베딩 레이어를 제외한 **핵심 추론 블록을 3.15M 이하로 유지**하여, 극도로 효율적인 추론을 지향합니다. (Vocab Size 16,000 기준)
+
+| Component | Parameters | Ratio | Description |
+|-----------|------------|-------|-------------|
+| **Total** | **11.34 M** | **100.0%** | 모델 전체 파라미터 |
+| **Embeddings** | 8.19 M | 72.2% | 어휘집 및 토큰 임베딩 |
+| **Reasoning Block** | **3.15 M** | **27.8%** | **DREAM 핵심 엔진 (Core)** |
+
+- **Core Block Breakdown**:
+  - **Attention**: 1.05 M (Q, K, V, O Projections)
+  - **Feed-Forward (SwiGLU)**: 2.10 M (w1, w2, w3 Weights)
+  - **Others**: RMSNorms, Step Scale 등
+
+---
+
 ## 📖 Documentation
 
 더 자세한 정보는 아래 문서들을 참고하세요:
