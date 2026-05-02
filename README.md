@@ -82,4 +82,3 @@ uv run python scripts/inference/chat.py
 DreamV2 프로젝트는 **Apache License 2.0** 하에 배포됩니다. 자유롭게 활용, 수정 및 배포가 가능합니다. 자세한 내용은 [LICENSE](./LICENSE) 파일을 확인하세요.
 
 ---
-<p align="center">Built with 🧠 by Antigravity</p>
