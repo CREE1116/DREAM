@@ -6,7 +6,9 @@
   <img src="https://img.shields.io/badge/Apache--2.0-D22128?style=for-the-badge&logo=apache&logoColor=white" />
 </p>
 
-**DreamV2**는 재귀적 추론(Dynamic REcursive Attention Model, DREAM)을 통해 사고하는 차세대 언어 모델 실험 프로젝트입니다. 고정된 레이어를 통과하는 기존 방식에서 벗어나, 데이터의 복잡도에 따라 동적으로 연산량을 할당하는 지능형 엔진을 지향합니다.
+**DreamV2**는 **D**ynamic **RE**cursive **A**ttention **M**odel (**DREAM**) 아키텍처를 기반으로 하는 차세대 언어 모델 실험 프로젝트입니다. 모델이 하나의 토큰에 대해 마치 꿈을 꾸듯 내부적으로 재귀적인 사고를 반복하며 최적의 상태로 진화해가는 과정을 의미합니다. 
+
+고정된 레이어 수를 통과하는 기존 방식에서 벗어나, 데이터의 복잡도에 따라 동적으로 연산량을 할당하는 지능형 엔진을 지향합니다.
 
 ---
 
