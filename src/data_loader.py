@@ -23,8 +23,14 @@ class PackedDataset(Dataset):
         os.makedirs(cache_dir, exist_ok=True)
         # 여러 데이터셋의 이름을 합쳐서 캐시 파일명 생성
         ds_hash = "_".join([n.split("/")[-1] for n in dataset_names])
-        bin_path = os.path.join(cache_dir, f"packed_{ds_hash}_len{max_len}.bin")
+        bin_path = os.path.join(cache_dir, f"packed_{ds_hash}.bin")
         
+        # Migration: If old version with _len128 exists, rename it to the generic name
+        old_bin_path = os.path.join(cache_dir, f"packed_{ds_hash}_len128.bin")
+        if not os.path.exists(bin_path) and os.path.exists(old_bin_path):
+            print(f"[*] Found existing cache with different length. Migrating to generic name...")
+            os.rename(old_bin_path, bin_path)
+
         if not os.path.exists(bin_path):
             print(f"[*] Cache not found. Tokenizing and Packing from {dataset_names}...")
             all_tokens_list = []
@@ -33,6 +39,7 @@ class PackedDataset(Dataset):
                 print(f"[*] Processing {d_name}...")
                 ds = load_dataset(d_name, split="train", cache_dir="./data")
                 
+                # Use batched processing for speed if possible, but keep it simple for now
                 for item in tqdm(ds, desc=f"Packing {d_name}"):
                     text = item.get("text", item.get("content", ""))
                     text = clean_text(text)

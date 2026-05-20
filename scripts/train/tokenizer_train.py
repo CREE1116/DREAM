@@ -13,7 +13,7 @@ from tokenizers import normalizers, decoders
 from datasets import load_from_disk
 from tqdm import tqdm
 
-def train_tokenizer(vocab_size=16000):
+def train_tokenizer(vocab_size=24000):
     dataset_names = ["HAERAE-HUB/KOREAN-WEBTEXT", "HAERAE-HUB/KOREAN-SyntheticText-1.5B"]
     print(f"--- DreamV2 Tokenizer Training (Kiwi + BPE) ---")
     print(f"[*] Loading datasets: {dataset_names}")

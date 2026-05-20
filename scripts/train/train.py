@@ -7,8 +7,9 @@ from tqdm import tqdm
 
 # 프로젝트 루트를 경로에 추가
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-
+# pyrefly: ignore [missing-import]
 from src.model import DREAM
+# pyrefly: ignore [missing-import]
 from src.data_loader import get_dataloader
 import os
 from torch.utils.tensorboard import SummaryWriter
@@ -39,7 +40,7 @@ def train():
         vocab_size=vocab_size,
         d_model=512,
         n_heads=8,
-        max_steps=128,
+        max_steps=64,
         tau=0.999,
         min_steps=1,
         freeze_dropout=0.5
@@ -71,9 +72,26 @@ def train():
     if os.path.exists(latest_path):
         print(f"[*] Resuming from {latest_path}...")
         ckpt = torch.load(latest_path, map_location=device)
-        model.load_state_dict(ckpt['model_state_dict'])
-        optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-        scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+        
+        # Load model state
+        if 'model_state_dict' in ckpt:
+            model.load_state_dict(ckpt['model_state_dict'])
+        else:
+            # Fallback if the whole file is just the state dict (some older saves might do this)
+            model.load_state_dict(ckpt)
+            
+        # Load optimizer state
+        if 'optimizer_state_dict' in ckpt:
+            optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+        else:
+            print("[Warning] 'optimizer_state_dict' not found in checkpoint. Skipping.")
+
+        # Load scheduler state
+        if 'scheduler_state_dict' in ckpt:
+            scheduler.load_state_dict(ckpt['scheduler_state_dict'])
+        else:
+            print("[Warning] 'scheduler_state_dict' not found in checkpoint. Skipping.")
+
         global_step = ckpt.get('global_step', 0)
         start_epoch = ckpt.get('epoch', 0)
 
@@ -136,7 +154,15 @@ def train():
 
     except KeyboardInterrupt:
         print(f"\nSaving state...")
-        torch.save({'model_state_dict': model.state_dict(), 'global_step': global_step}, latest_path)
+        save_data = {
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict(),
+            'global_step': global_step,
+            'epoch': epoch,
+            'config': {'vocab_size': vocab_size, 'd_model': 512, 'n_heads': 8}
+        }
+        torch.save(save_data, latest_path)
 
     writer.close()
 

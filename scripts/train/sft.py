@@ -83,27 +83,72 @@ def train_sft():
     tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_path)
     model, _ = DREAM(vocab_size=len(tokenizer)).to(device), None
     if os.path.exists(checkpoint_path):
-        model.load_state_dict(torch.load(checkpoint_path, map_location=device)['model_state_dict'])
+        print(f"[*] Loading checkpoint from {checkpoint_path}...")
+        ckpt = torch.load(checkpoint_path, map_location=device)
+        if isinstance(ckpt, dict) and 'model_state_dict' in ckpt:
+            model.load_state_dict(ckpt['model_state_dict'])
+        else:
+            model.load_state_dict(ckpt)
 
     dataset = SFTDataset(tokenizer_path)
     dataloader = DataLoader(dataset, batch_size=4, shuffle=True)
     
-    optimizer = optim.AdamW(model.parameters(), lr=5e-5)
+    optimizer = optim.AdamW(model.parameters(), lr=5e-5, weight_decay=0.01)
+    
+    # 스케줄러 설정 (SFT는 데이터가 적으므로 짧은 Warmup과 Cosine Annealing 적용)
+    num_epochs = 3
+    total_steps = num_epochs * len(dataloader)
+    warmup_steps = int(total_steps * 0.05) # 전체의 5%를 Warmup으로 사용
+    
+    scheduler1 = optim.lr_scheduler.LinearLR(optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup_steps)
+    scheduler2 = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=(total_steps - warmup_steps))
+    scheduler = optim.lr_scheduler.SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[warmup_steps])
+    
     criterion = nn.CrossEntropyLoss(ignore_index=-100)
 
+    global_step = 0
     model.train()
-    for epoch in range(3):
-        pbar = tqdm(dataloader, desc=f"SFT Epoch {epoch+1}")
+    for epoch in range(num_epochs):
+        pbar = tqdm(dataloader, desc=f"SFT Epoch {epoch+1}/{num_epochs}")
         for batch in pbar:
+            global_step += 1
             input_ids = batch["input_ids"].to(device)
             target_ids = batch["target_ids"].to(device)
             
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             output = model(input_ids)
             loss = criterion(output.reshape(-1, len(tokenizer)), target_ids.reshape(-1))
             loss.backward()
+            
             optimizer.step()
-            pbar.set_postfix({'loss': f"{loss.item():.4f}"})
+            scheduler.step()
+            
+            pbar.set_postfix({
+                'loss': f"{loss.item():.4f}",
+                'lr': f"{scheduler.get_last_lr()[0]:.2e}"
+            })
+
+            # 500스텝마다 중간 저장
+            if global_step % 500 == 0:
+                ckpt_path = f"checkpoints/dream_sft_step_{global_step}.pt"
+                torch.save({
+                    'epoch': epoch,
+                    'global_step': global_step,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict(),
+                    'loss': loss.item(),
+                }, ckpt_path)
+        
+        # 에폭 끝날 때마다 저장
+        torch.save({
+            'epoch': epoch,
+            'global_step': global_step,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict(),
+            'loss': loss.item(),
+        }, f"checkpoints/dream_sft_epoch_{epoch+1}.pt")
 
     torch.save(model.state_dict(), "checkpoints/dream_sft_final.pt")
 
